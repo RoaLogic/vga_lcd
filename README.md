@@ -1,6 +1,7 @@
 # vga_lcd
 VGA LCD Core (OpenCores)
-From the original developer of the core ... Roa Logic is commited to maintaining the cores which the company's founder contributed to OpenCores many years ago. All cores will be released and maintained here on its github account.
+
+From the original developer of the core: "Roa Logic is commited to maintaining the cores which the company's founder contributed to OpenCores many years ago. All cores will be released and maintained here on the Roa Logic github account."
 
 
 ## Description
@@ -14,25 +15,26 @@ The core can interrupt the host on each horizontal and/or vertical synchronizati
 
 ## Features
 
-- CRT and LCD display support
--- 24bit Standard VGA interface
--- Separate VSYNC/HSYNC and combined CSYNC synchronization signals
--- Composite BLANK signal
--- TripleDisplay support
-- 12bit Interface
--- Compatible with DVI transmitters and 12bit VGA ADCs
--- 4 different output modes
--- Can be used simultaneous with the 24bit interface
-- User programmable video resolutions
-- User programmable video timing
-- User programmable video control signals polarization levels
-- 32bpp, 24bpp and 16bpp color modes
-- 8bit gray-scale and 8bit pseudo-color modes
-- Supports video- and/or color-lookup-table bankswitching during vertical retrace
-- Flexible master and slave interfaces
-- Operates from a wide range of input clock frequencies
-- Static synchronous design
-- Fully synthesizeable
+* CRT and LCD display support
+  * 24bit Standard VGA interface
+  * Separate VSYNC/HSYNC and combined CSYNC synchronization signals
+  * Composite BLANK signal
+  * TripleDisplay support
+* 12bit Interface
+  * Compatible with DVI transmitters and 12bit VGA ADCs
+  * 4 different output modes
+  * Can be used simultaneous with the 24bit interface
+* User programmable video resolutions
+* User programmable video timing
+* User programmable video control signals polarization levels
+* 32bpp, 24bpp and 16bpp color modes
+* 8bit gray-scale and 8bit pseudo-color modes
+* Supports video- and/or color-lookup-table bankswitching during vertical retrace
+* Flexible master and slave interfaces
+* Operates from a wide range of input clock frequencies
+* Static synchronous design
+
+Fully synthesizeable
 
 See the on-line documentation (current revision 1.2) for more information.
 
