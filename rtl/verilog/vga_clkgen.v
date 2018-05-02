@@ -44,10 +44,9 @@
 // VERSION DATE        AUTHOR      DESCRIPTION
 // 2.0     2003        rherveille  Last OpenCores Release
 // ------------------------------------------------------------------
-// KEYWORDS : RISC-V PLATFORM LEVEL INTERRUPT CONTROLLER - PLIC
+// KEYWORDS : VGA_LCD OPENCORES                                 
 // ------------------------------------------------------------------
 // PURPOSE  : Clock generation 
-//            source-target matrix.
 // ------------------------------------------------------------------
 // PARAMETERS
 //  PARAM NAME        RANGE  DESCRIPTION              DEFAULT UNITS
@@ -58,15 +57,15 @@
 //   Clock Domains       : pclk_i
 //   Critical Timing     : 
 //   Test Features       : 
-//   Asynchronous I/F    : Fully asynchronous block
+//   Asynchronous I/F    : no 
 //   Scan Methodology    : na
 //   Instantiations      : none
 //   Synthesizable (y/n) : Yes
-//   Other               : End-points (registers) are in the
-//                         plic_target module
+//   Other               : This is a clock generator block, see note
 // -FHDR-------------------------------------------------------------
 
-/////////////////////////////////////////////////////////////////////
+
+// N O T E //////////////////////////////////////////////////////////
 //                                                                 //
 // !! SPECIAL LOGIC, USE PRECAUTION DURING SYNTHESIS AND LAYOUT !! //
 //                                                                 //
