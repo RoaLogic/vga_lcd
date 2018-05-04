@@ -53,10 +53,6 @@
 //               Added 32bpp mode.
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
-
 module vga_tgen(
 	clk, clk_ena, rst,
 	Thsync, Thgdel, Thgate, Thlen, Tvsync, Tvgdel, Tvgate, Tvlen,

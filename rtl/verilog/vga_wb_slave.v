@@ -73,9 +73,6 @@
 //               Changed top-level name to vga_enh_top.v
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
 `include "vga_defines.v"
 
 module vga_wb_slave(

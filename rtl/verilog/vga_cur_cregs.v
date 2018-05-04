@@ -57,10 +57,6 @@
 //
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
-
 module vga_cur_cregs (
 	clk_i, rst_i, arst_i,
 	hsel_i, hadr_i, hwe_i, hdat_i, hdat_o, hack_o,

@@ -85,9 +85,6 @@
 //               Changed top-level name to vga_enh_top.v
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
 
 module vga_wb_master (clk_i, rst_i, nrst_i,
 	cyc_o, stb_o, cti_o, bte_o, we_o, adr_o, sel_o, ack_i, err_i, dat_i, sint,
