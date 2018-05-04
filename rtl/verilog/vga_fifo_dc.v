@@ -58,10 +58,6 @@
 //               Added 32bpp mode.
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
-
 
 /*
 
@@ -216,7 +212,7 @@ module vga_fifo_dc (rclk, wclk, rclr, wclr, wreq, d, rreq, q, empty, full);
 		.rce(1'b1),
 		.oe(1'b1),
 		.raddr(rptr),
-		.do(q),
+		.d_o(q),
 		.wclk(wclk),
 		.wrst(1'b0),
 		.wce(1'b1),

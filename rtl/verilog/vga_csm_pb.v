@@ -54,10 +54,6 @@
 //               Changed top-level name to vga_enh_top.v
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
-
 module vga_csm_pb (clk_i, req0_i, ack0_o, adr0_i, dat0_i, dat0_o, we0_i, req1_i, ack1_o, adr1_i, dat1_i, dat1_o, we1_i);
 		
 	//
@@ -138,7 +134,7 @@ module vga_csm_pb (clk_i, req0_i, ack0_o, adr0_i, dat0_i, dat0_o, we0_i, req1_i,
 		.oe(1'b1),        // always output data
 		.addr(mem_adr),
 		.di(mem_d),
-		.do(mem_q)
+		.d_o(mem_q)
 	);
 
 	// assign DAT_O outputs

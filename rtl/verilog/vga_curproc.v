@@ -66,9 +66,6 @@
 //               Changed top-level name to vga_enh_top.v
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
 
 module vga_curproc (clk, rst_i, Thgate, Tvgate, idat, idat_wreq, 
 	cursor_xy, cursor_en, cursor_res, 
@@ -202,7 +199,7 @@ module vga_curproc (clk, rst_i, Thgate, Tvgate, idat, idat_wreq,
 		.oe(1'b1),        // always output data
 		.addr(cbuf_a),
 		.di(cursor_wdat),
-		.do(cbuf_q)
+		.d_o(cbuf_q)
 	);
 
 	//
