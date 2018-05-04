@@ -56,10 +56,6 @@
 //               Changed top-level name to vga_enh_top.v
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
-
 
 // set FIFO_RW_CHECK to prevent writing to a full and reading from an empty FIFO
 //`define FIFO_RW_CHECK
