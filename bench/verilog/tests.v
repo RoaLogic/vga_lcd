@@ -427,7 +427,7 @@ task pd1_test;
       m0.wb_wr1( `VTIM,  4'hf, {tvsync, tvgdel, tvgate} );
       m0.wb_wr1( `HVLEN, 4'hf, {thlen , tvlen} );
 
-      mode  = 4;
+      mode  = 0;
       vbl   = 1;
       delay = 1;
 
@@ -436,7 +436,7 @@ task pd1_test;
           s0.set_delay(delay);
 
           for(vbl=0; vbl <4;vbl=vbl+1 )
-//          for(mode=0;mode<4;mode=mode+1)
+          for(mode=0;mode<4;mode=mode+1)
           begin
               // -------------------------------
               // Turn Off VGA before Mode Change
