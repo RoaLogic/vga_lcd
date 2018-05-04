@@ -5,11 +5,11 @@
 ##   |  |\  \ ' '-' '\ '-'  |    |  '--.' '-' ' '-' ||  |\ `--.    ##
 ##   `--' '--' `---'  `--`--'    `-----' `---' `-   /`--' `---'    ##
 ##                                             `---'               ##
-##   Main Simulation Makefile                                      ##
+##   Modelsim/Questasim Makefile                                   ##
 ##                                                                 ##
 #####################################################################
 ##                                                                 ##
-##             Copyright (C) 2017 ROA Logic BV                     ##
+##             Copyright (C) 2014-2017 ROA Logic BV                ##
 ##             www.roalogic.com                                    ##
 ##                                                                 ##
 ##   This source file may be used and distributed without          ##
@@ -32,131 +32,67 @@
 ##                                                                 ##
 #####################################################################
 
-all: Makefile
+#
+# ChangeLog
+# 20171101: Added 'mfcu' option for Multi-File-Compilation
+#
 
-SIMULATORS = msim ncsim vcs icarus riviera
-LINTERS    = $(addsuffix _lint, $(SIMULATORS))
-SIMWAVES   = $(addsuffix _waves, $(SIMULATORS))
 
-MS     = -s
-
-ROOT_DIR=../../..
+all: sim
 
 #####################################################################
-#
-# Regression variables
-#
-#####################################################################
-#add regression variables here
-
-
-#####################################################################
-#
-# Sources
-#
-#####################################################################
--include Makefile.include
-
-
-#####################################################################
-#
-# Misc Variables
-#
-#####################################################################
-INCDIRS:=$(INCDIRS)
-DEFINES:=$(DEFINES)
-
-shell=/bin/sh
-
-
-#####################################################################
-#
-# OVL
-#
-#####################################################################
-ifeq ($(OVL_ASSERT),ON)
-    INCDIRS +=$(STD_OVL_DIR)
-    DEFINES +=OVL_ASSERT_ON
-    LIBDIRS +=$(STD_OVL_DIR)
-    LIBEXT  +=.vlib
-
-    ifeq ($(OVL_INIT_MSG),ON)
-        DEFINES +=OVL_INIT_MSG
-    endif
-endif
-
-
-#####################################################################
-#
 # Make Targets
-#
 #####################################################################
-.PHONY: $(SIMULATORS) $(LINTERS) $(SIMWAVES)
-$(SIMULATORS): % : %/Makefile $(TB_PREREQ)
-	@$(MAKE) $(MS) -C $@ sim				\
-	VLOG="$(abspath $(RTL_VLOG) $(TB_VLOG))"		\
-	TECHLIBS="$(TECHLIBS)"					\
-	LIBDIRS="$(LIBDIRS)"					\
-	LIBEXT="$(LIBEXT)"					\
-	VHDL="$(abspath $(RTL_VHDL) $(TB_VHDL))"		\
-	INCDIRS="$(abspath $(INCDIRS))"				\
-	DEFINES="$(DEFINES)"					\
-	TOP=$(TB_TOP)						\
-	LOG=$(LOG) PARAMS="$(PARAMS)"
+SIM_OPTS=-c +notimingchecks
 
-$(SIMWAVES): %_waves : %/Makefile $(TB_PREREQ)
-	@$(MAKE) $(MS) -C $(subst _waves,,$@) simw		\
-	VLOG="$(abspath $(RTL_VLOG) $(TB_VLOG))"		\
-	TECHLIBS="$(TECHLIBS)"					\
-	LIBDIRS="$(LIBDIRS)"					\
-	LIBEXT="$(LIBEXT)"					\
-	VHDL="$(abspath $(RTL_VHDL) $(TB_VHDL))"		\
-	INCDIRS="$(abspath $(INCDIRS))"				\
-	DEFINES="$(DEFINES)"					\
-	TOP=$(TB_TOP)						\
-	LOG=$(LOG) PARAMS="$(PARAMS)"
+.PHONY: sim simw clean
 
-$(LINTERS): %_lint : %/Makefile $(TB_PREREQ)
-	@$(MAKE) $(MS) -C $(subst _lint,,$@) lint		\
-	VLOG="$(abspath $(RTL_VLOG))"				\
-	VHDL="$(abspath $(RTL_VHDL))"				\
-	INCDIRS="$(abspath $(INCDIRS))"				\
-	DEFINES="$(DEFINES)"					\
-	TOP=$(RTL_TOP)
+LOG = $(TOP).log
+
+sim: vlog
+	echo "--- Running sim"
+	vsim $(SIM_OPTS)					\
+	  -l $(LOG) $(TOP)					\
+	  -do "run -all; quit"					\
+	  $(foreach p, $(PARAMS),-g`echo $p | sed -r 's/(\w+)=([^0-9].*)/\1="\2"/'`)
 
 
-.PHONY: bps
-bps: % : %/Makefile
-	@$(MAKE) $(MS) -C $@ $@                                 \
-	VLOG="$(abspath $(RTL_VLOG))"                           \
-	VHDL="$(abspath $(RTL_VHDL))"                           \
-	TOP=$(RTL_TOP)
-
-
-.PHONY: clean distclean mrproper
+simw: vlog
+	echo "--- Running sim with waveform dump"
+	vsim $(SIM_OPTS) 					\
+	  -l $(LOG) $(TOP)					\
+	  -novopt +access +r -wlf $(TOP).wlf			\
+	  -do "log -r /$(TOP)/*; run -all; quit"				\
+	$(foreach p, $(PARAMS),-g`echo $p | sed -r 's/(\w+)=([^0-9].*)/\1="\2"/'`)
+	
 clean:
-	@for f in $(wildcard *); do				\
-		if test -d $$f; then $(MAKE) -C $$f clean; fi	\
-	done
+	@rm -rf work *.log *.wlf
 
-distclean:
-	@rm -rf $(SIMULATORS) Makefile.include $(TB_PREREQ)
-
-mrproper:
-	@rm -rf *
 
 
 #####################################################################
-#
-# Make simulation structure
-#
+## VHDL
 #####################################################################
-Makefile.include:
-	@cp ../bin/Makefile.include .
 
-%/Makefile:
-	@mkdir -p $*
-	@cp ../bin/sims/Makefile.$* $@
 
-$(TB_PREREQ):
-	@cp ../bin/$@ $@
+#####################################################################
+## Verilog
+#####################################################################
+.PHONY: vlog
+
+vlog: work $(VLOG) $(VLOG_LIBS)
+	echo "--- Running vlog"
+	vlog -work work $(VLOG)					\
+	-sv -mfcu						\
+	$(foreach d,$(DEFINES),+define+$d)			\
+	$(foreach d,$(INCDIRS),+incdir+$d)			\
+	$(foreach l,$(wildcard $(LIBDIRS)),-y $l) 		\
+	+libext$(foreach e,$(LIBEXT),+$e)			\
+	$(foreach l,$(wildcard $(TECHLIBS)/*.v),-v $l)
+
+
+#####################################################################
+## libraries
+#####################################################################
+work:
+	vlib $@

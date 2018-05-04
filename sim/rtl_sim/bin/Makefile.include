@@ -5,7 +5,8 @@
 ##   |  |\  \ ' '-' '\ '-'  |    |  '--.' '-' ' '-' ||  |\ `--.    ##
 ##   `--' '--' `---'  `--`--'    `-----' `---' `-   /`--' `---'    ##
 ##                                             `---'               ##
-##   Main Simulation Makefile                                      ##
+##   VGA/LCD Core                                                  ##
+##   Simulator Include File                                        ##
 ##                                                                 ##
 #####################################################################
 ##                                                                 ##
@@ -32,131 +33,74 @@
 ##                                                                 ##
 #####################################################################
 
-all: Makefile
-
-SIMULATORS = msim ncsim vcs icarus riviera
-LINTERS    = $(addsuffix _lint, $(SIMULATORS))
-SIMWAVES   = $(addsuffix _waves, $(SIMULATORS))
-
-MS     = -s
-
-ROOT_DIR=../../..
-
 #####################################################################
-#
-# Regression variables
-#
+# Implementation details
 #####################################################################
-#add regression variables here
+TECHNOLOGY = generic
+TARGET     =
 
 
 #####################################################################
-#
-# Sources
-#
+# OVL checker
+# This can be changed on the command line
 #####################################################################
--include Makefile.include
-
-
-#####################################################################
-#
-# Misc Variables
-#
-#####################################################################
-INCDIRS:=$(INCDIRS)
-DEFINES:=$(DEFINES)
-
-shell=/bin/sh
+OVL_ASSERT   = OFF
+OVL_INIT_MSG = ON
+STD_OVL_DIR  = /projects/OVL/std_ovl
 
 
 #####################################################################
-#
-# OVL
-#
+# Design constants
 #####################################################################
-ifeq ($(OVL_ASSERT),ON)
-    INCDIRS +=$(STD_OVL_DIR)
-    DEFINES +=OVL_ASSERT_ON
-    LIBDIRS +=$(STD_OVL_DIR)
-    LIBEXT  +=.vlib
+INCDIRS:=
+DEFINES:=
 
-    ifeq ($(OVL_INIT_MSG),ON)
-        DEFINES +=OVL_INIT_MSG
-    endif
+
+#####################################################################
+# Design Sources
+#####################################################################
+DUT_SRC_DIR=$(ROOT_DIR)/rtl/verilog
+RTL_TOP  = vga_enh_top 
+RTL_VLOG =$(DUT_SRC_DIR)/generic_dpram.v		\
+	  $(DUT_SRC_DIR)/generic_spram.v		\
+	  $(DUT_SRC_DIR)/vga_colproc.v			\
+	  $(DUT_SRC_DIR)/vga_csm_pb.v			\
+	  $(DUT_SRC_DIR)/vga_cur_cregs.v		\
+	  $(DUT_SRC_DIR)/vga_curproc.v			\
+	  $(DUT_SRC_DIR)/vga_enh_top.v 			\
+	  $(DUT_SRC_DIR)/vga_fifo.v			\
+	  $(DUT_SRC_DIR)/vga_fifo_dc.v			\
+	  $(DUT_SRC_DIR)/vga_pgen.v			\
+	  $(DUT_SRC_DIR)/vga_clkgen.v			\
+	  $(DUT_SRC_DIR)/vga_tgen.v			\
+	  $(DUT_SRC_DIR)/vga_vtim.v			\
+	  $(DUT_SRC_DIR)/vga_wb_master.v		\
+	  $(DUT_SRC_DIR)/vga_wb_slave.v
+RTL_VHDL =
+
+
+#####################################################################
+# Testbench Sources
+#####################################################################
+TB_PREREQ=
+TB_TOP=testbench_top
+TB_SRC_DIR=$(ROOT_DIR)/bench/verilog
+TB_VLOG = $(TB_SRC_DIR)/testbench_top.v			\
+	  $(TB_SRC_DIR)/wb_slv_model.v			\
+	  $(TB_SRC_DIR)/wb_mast_model.v			\
+	  $(TB_SRC_DIR)/sync_check.v			\
+	  $(TB_SRC_DIR)/wb_b3_check.v
+TB_VHDL =
+
+LOG = $(TB_TOP).log
+
+
+#####################################################################
+# Technology
+#####################################################################
+ifneq ($(TECHNOLOGY), generic)
+ifneq ($(strip $(TECHNOLOGY)),)
+-include ../bin/tech/Makefile.$(TECHNOLOGY)
+endif
 endif
 
-
-#####################################################################
-#
-# Make Targets
-#
-#####################################################################
-.PHONY: $(SIMULATORS) $(LINTERS) $(SIMWAVES)
-$(SIMULATORS): % : %/Makefile $(TB_PREREQ)
-	@$(MAKE) $(MS) -C $@ sim				\
-	VLOG="$(abspath $(RTL_VLOG) $(TB_VLOG))"		\
-	TECHLIBS="$(TECHLIBS)"					\
-	LIBDIRS="$(LIBDIRS)"					\
-	LIBEXT="$(LIBEXT)"					\
-	VHDL="$(abspath $(RTL_VHDL) $(TB_VHDL))"		\
-	INCDIRS="$(abspath $(INCDIRS))"				\
-	DEFINES="$(DEFINES)"					\
-	TOP=$(TB_TOP)						\
-	LOG=$(LOG) PARAMS="$(PARAMS)"
-
-$(SIMWAVES): %_waves : %/Makefile $(TB_PREREQ)
-	@$(MAKE) $(MS) -C $(subst _waves,,$@) simw		\
-	VLOG="$(abspath $(RTL_VLOG) $(TB_VLOG))"		\
-	TECHLIBS="$(TECHLIBS)"					\
-	LIBDIRS="$(LIBDIRS)"					\
-	LIBEXT="$(LIBEXT)"					\
-	VHDL="$(abspath $(RTL_VHDL) $(TB_VHDL))"		\
-	INCDIRS="$(abspath $(INCDIRS))"				\
-	DEFINES="$(DEFINES)"					\
-	TOP=$(TB_TOP)						\
-	LOG=$(LOG) PARAMS="$(PARAMS)"
-
-$(LINTERS): %_lint : %/Makefile $(TB_PREREQ)
-	@$(MAKE) $(MS) -C $(subst _lint,,$@) lint		\
-	VLOG="$(abspath $(RTL_VLOG))"				\
-	VHDL="$(abspath $(RTL_VHDL))"				\
-	INCDIRS="$(abspath $(INCDIRS))"				\
-	DEFINES="$(DEFINES)"					\
-	TOP=$(RTL_TOP)
-
-
-.PHONY: bps
-bps: % : %/Makefile
-	@$(MAKE) $(MS) -C $@ $@                                 \
-	VLOG="$(abspath $(RTL_VLOG))"                           \
-	VHDL="$(abspath $(RTL_VHDL))"                           \
-	TOP=$(RTL_TOP)
-
-
-.PHONY: clean distclean mrproper
-clean:
-	@for f in $(wildcard *); do				\
-		if test -d $$f; then $(MAKE) -C $$f clean; fi	\
-	done
-
-distclean:
-	@rm -rf $(SIMULATORS) Makefile.include $(TB_PREREQ)
-
-mrproper:
-	@rm -rf *
-
-
-#####################################################################
-#
-# Make simulation structure
-#
-#####################################################################
-Makefile.include:
-	@cp ../bin/Makefile.include .
-
-%/Makefile:
-	@mkdir -p $*
-	@cp ../bin/sims/Makefile.$* $@
-
-$(TB_PREREQ):
-	@cp ../bin/$@ $@
