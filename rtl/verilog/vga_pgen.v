@@ -61,10 +61,6 @@
 //               Added 32bpp mode.
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
-
 `include "vga_defines.v"
 
 module vga_pgen (
@@ -80,7 +76,7 @@ module vga_pgen (
 	line_fifo_wreq, line_fifo_full, line_fifo_d, line_fifo_rreq, line_fifo_q,
 	pclk_i,
 `ifdef VGA_12BIT_DVI
-	dvi_pclk_p_o, dvi_pclk_m_o, dvi_hsync_o, dvi_vsync_o, dvi_de_o, dvi_d_o,
+	dvi_pclk_p_o, dvi_pclk_n_o, dvi_hsync_o, dvi_vsync_o, dvi_de_o, dvi_d_o,
 `endif
 	pclk_o, hsync_o, vsync_o, csync_o, blank_o, r_o, g_o, b_o
 );
@@ -169,7 +165,7 @@ module vga_pgen (
 
 	`ifdef VGA_12BIT_DVI
 	    output        dvi_pclk_p_o;  // dvi pclk+
-	    output        dvi_pclk_m_o;  // dvi pclk-
+	    output        dvi_pclk_n_o;  // dvi pclk-
 	    output        dvi_hsync_o;   // dvi hsync
 	    output        dvi_vsync_o;   // dvi vsync
 	    output        dvi_de_o;      // dvi data enable
@@ -206,7 +202,7 @@ module vga_pgen (
 	  .rst_i        ( nVen         ),
 	  .pclk_o       ( pclk_o       ),
 	  .dvi_pclk_p_o ( dvi_pclk_p_o ),
-	  .dvi_pclk_m_o ( dvi_pclk_m_o ),
+	  .dvi_pclk_n_o ( dvi_pclk_n_o ),
 	  .pclk_ena_o   ( pclk_ena     )
 	);
 
@@ -319,22 +315,22 @@ module vga_pgen (
 	//
 	// hookup color processor
 	vga_colproc color_proc (
-		.clk               ( clk_i               ),
-		.srst              ( sclr                ),
-		.vdat_buffer_di    ( fb_data_fifo_q      ), //data_fifo_q),
-		.ColorDepth        ( ctrl_cd             ),
-		.PseudoColor       ( ctrl_pc             ),
-		.vdat_buffer_empty ( fb_data_fifo_empty  ), //data_fifo_empty),
-		.vdat_buffer_rreq  ( fb_data_fifo_rreq   ), //data_fifo_rreq),
-		.rgb_fifo_full     ( rgb_fifo_full       ),
-		.rgb_fifo_wreq     ( color_proc_wreq     ),
-		.r                 ( color_proc_q[23:16] ),
-		.g                 ( color_proc_q[15: 8] ),
-		.b                 ( color_proc_q[ 7: 0] ),
-		.clut_req          ( clut_req            ),
-		.clut_ack          ( clut_ack            ),
-		.clut_offs         ( clut_offs           ),
-		.clut_q            ( clut_q              )
+		.clk_i               ( clk_i               ),
+		.rst_i               ( sclr                ),
+		.vdat_buffer_d_i     ( fb_data_fifo_q      ),
+		.color_depth_i       ( ctrl_cd             ),
+		.pseudo_color_i      ( ctrl_pc             ),
+		.vdat_buffer_empty_i ( fb_data_fifo_empty  ),
+		.vdat_buffer_rreq_o  ( fb_data_fifo_rreq   ),
+		.rgb_fifo_full_i     ( rgb_fifo_full       ),
+		.rgb_fifo_wreq_o     ( color_proc_wreq     ),
+		.r_o                 ( color_proc_q[23:16] ),
+		.g_o                 ( color_proc_q[15: 8] ),
+		.b_o                 ( color_proc_q[ 7: 0] ),
+		.clut_req_o          ( clut_req            ),
+		.clut_ack_i          ( clut_ack            ),
+		.clut_offs_o         ( clut_offs           ),
+		.clut_q_i            ( clut_q              )
 	);
 
 	//
