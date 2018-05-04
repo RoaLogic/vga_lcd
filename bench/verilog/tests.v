@@ -359,334 +359,318 @@ endtask
 
 
 
-
+/** Pixel Data Test 1
+ * pd1_test
+ */
 task pd1_test;
+  integer    mode;
+  integer    n, p, l;
+  reg [31:0] pn;
+  reg [31:0] pra,
+             paa,
+             tmp;
+  reg [23:0] pd;
+  reg [ 1:0] cd;    //color depth
+  reg        pc;    //pseudo color
+  reg [31:0] data;
+  reg [31:0] cbar;
+  reg [ 7:0] vbl;
+  reg [ 5:0] delay;
 
-integer		mode;
-integer		n, p, l;
-reg	[31:0]	pn;
-reg	[31:0]	pra, paa, tmp;
-reg	[23:0]	pd;
-reg	[ 1:0]	cd;
-reg		pc;
-reg	[31:0]	data;
-reg	[31:0]	cbar;
-reg	[ 7:0]	vbl;
-reg	[ 5:0]	delay;
+  begin
+      $display("\n\n");
+      $display("---------------------------------------------------");
+      $display("- Pixel Data Test 1                               -");
+      $display("---------------------------------------------------\n");
 
-begin
+      m0.wb_wr1( `VBARA, 4'hf, 0 );
+      m0.wb_wr1( `VBARB, 4'hf, 123456 );
 
-$display("\n\n");
-$display("*****************************************************");
-$display("*** Pixel Data Test 1                             ***");
-$display("*****************************************************\n");
+      cbar = 32'h0000_0800;
 
-	m0.wb_wr1( `VBARA, 4'hf, 0 );
-	m0.wb_wr1( `VBARB, 4'hf, 123456 );
+      thsync = 0;
+      thgdel = 0;
+      thgate = 320;
+      thlen  = 345;
 
-	cbar = 32'h0000_0800;
+      tvsync = 0;
+      tvgdel = 0;
+      tvgate = 240;
+      tvlen  = 245;
 
-	thsync = 0;
-	thgdel = 0;
-	thgate = 320;
-	thlen = 345;
+      thsync = 39;
+      thgdel = 124;
+      thgate = 646;
+      thlen  = 832;
 
-	tvsync = 0;
-	tvgdel = 0;
-	tvgate = 240;
-	tvlen = 245;
+      tvsync = 2;
+      tvgdel = 25;
+      tvgate = 484;
+      tvlen  = 520;
 
-	thsync = 39;
-	thgdel = 124;
-	thgate = 646;
-	thlen = 832;
+      thsync = 6;
+      thgdel = 20;
+      thgate = 319;
+      thlen  = 390;
 
-	tvsync = 2;
-	tvgdel = 25;
-	tvgate = 484;
-	tvlen = 520;
+      tvsync = 1;
+      tvgdel = 8;
+      tvgate = 239;
+      tvlen  = 280;
 
-	thsync = 6;
-	thgdel = 20;
-	thgate = 319;
-	thlen = 390;
+      hpol = 0;
+      vpol = 0;
+      cpol = 0;
+      bpol = 0;
 
-	tvsync = 1;
-	tvgdel = 8;
-	tvgate = 239;
-	tvlen = 280;
+      m0.wb_wr1( `HTIM,  4'hf, {thsync, thgdel, thgate} );
+      m0.wb_wr1( `VTIM,  4'hf, {tvsync, tvgdel, tvgate} );
+      m0.wb_wr1( `HVLEN, 4'hf, {thlen , tvlen} );
 
-/*
-	thsync = 0;
-	thgdel = 0;
-	thgate = 63;
-	thlen = 70;
+      mode  = 4;
+      vbl   = 1;
+      delay = 1;
 
-	tvsync = 0;
-	tvgdel = 0;
-	tvgate = 32;
-	tvlen = 36;
+      for(delay=0; delay<6; delay=delay+1)
+      begin
+          s0.set_delay(delay);
 
-	thsync = 119;
-	thgdel = 61;
-	thgate = 805;
-	thlen  = 1038;
+          for(vbl=0; vbl <4;vbl=vbl+1 )
+//          for(mode=0;mode<4;mode=mode+1)
+          begin
+              // -------------------------------
+              // Turn Off VGA before Mode Change
 
-	tvsync = 5;
-	tvgdel = 20;
-	tvgate = 600;
-	tvlen  = 665;
+              m0.wb_wr1( `CTRL,  4'hf, {
+                         16'h0,   // Reserved
+                         bpol,
+                         cpol,
+                         vpol,
+                         hpol,
+                         pc,      // PC
+                         cd,	  // CD
+                         2'h0,    // VBL
+                         1'b0,    // CBSWE
+                         1'b0,    // VBSWE
+                         1'b0,    // CBSIE
+                         1'b0,    // VBSIE
+                         1'b0,    // HIE
+                         1'b0,    // VIE
+                         1'b0     // Video Enable
+                         }
+              );
 
-*/
+              //fill video memory
+              s0.fill_mem(1);
 
-	hpol = 0;
-	vpol = 0;
-	cpol = 0;
-	bpol = 0;
 
-	m0.wb_wr1( `HTIM,  4'hf, {thsync, thgdel, thgate} );
-	m0.wb_wr1( `VTIM,  4'hf, {tvsync, tvgdel, tvgate} );
-	m0.wb_wr1( `HVLEN, 4'hf, {thlen, tvlen} );
+`ifdef USE_VC
+              // Fill internal Color Lookup Table
+              repeat(10) @(posedge clk);
+              for(n=0;n<512;n=n+1)
+              begin
+                  data = s0.mem[ cbar[31:2] + n];
+                  m0.wb_wr1( 32'h0000_0800 + (n*4), 4'hf, data );
+              end
+              repeat(10) @(posedge clk);
+`endif
 
-mode  = 3;
-vbl   = 1;
-delay = 1;
+              //set mode options
+              case(mode)
+                0: begin          //24bpp
+                       cd = 2'h2;
+                       pc = 1'b0;
+                   end
+                1: begin          //8bpp BW
+                       cd = 2'h0;
+                       pc = 1'b0;
+                   end
+                2: begin          //8bpp pseudo-color
+                       cd = 2'h0;
+                       pc = 1'b1;
+                   end
+                3: begin          //16bpp
+                       cd = 2'h1;
+                       pc = 1'b0;
+                   end
+                4: begin          //32bpp
+                       cd = 2'h3;
+                       pc = 1'b0;
+                   end
+              endcase
 
-for(delay=0;delay<6;delay=delay+1)
-   begin
-	s0.set_delay(delay);
-for(vbl=0;vbl<4;vbl=vbl+1)
-for(mode=0;mode<4;mode=mode+1)
-   begin
-	// -------------------------------
-	// Turn Off VGA before Mode Change
 
-	m0.wb_wr1( `CTRL,  4'hf, {
-				16'h0,	// Reserved
-				bpol, cpol,
-				vpol, hpol,
-				pc,	// 1'b0,	// PC
-				cd,	// 2'h2,	// CD
-				2'h0,	// VBL
-				1'b0,	// CBSWE
-				1'b0,	// VBSWE
-				1'b0, // CBSIE
-				1'b0,	// VBSIE
-				1'b0,	// HIE
-				1'b0,	// VIE
-				1'b0	// Video Enable
-				});
+              // -------------------------------
+              // Turn VGA back On ...
+              m0.wb_wr1( `CTRL,  4'hf, {
+                         16'h0,   // Reserved
+                         bpol,
+                         cpol,
+                         vpol,
+                         hpol,
+                         pc,      // PC
+                         cd,      // CD
+                         vbl[1:0],// VBL
+                         1'b0,    // Reserved
+                         1'b0,    // CBSWE
+                         1'b0,    // VBSWE
+                         1'b0,    // BSIE
+                         1'b0,    // HIE
+                         1'b0,    // VIE
+                         1'b1     // Video Enable
+                         }
+              );
 
-	s0.fill_mem(1);
+              $display("VBL: %0d, Mode: %0d", vbl, mode);
+              repeat(2) @(posedge vsync);
 
-	`ifdef USE_VC
-	// Fill internal Color Lookup Table
-	repeat(10)	@(posedge clk);
-	for(n=0;n<512;n=n+1)
-	   begin
-	       //m0.wb_rd1( 32'h0002_0000 + (n*4), 4'hf, data );
-	       data = s0.mem[ cbar[31:2] + n];
-	       m0.wb_wr1( 32'h0000_0800 + (n*4), 4'hf, data );
-	   end
-	repeat(10)	@(posedge clk);
-	`endif
+              for(l=0;l<tvgate  ;l=l+1)  //for each line
+              for(p=0;p<thgate+1;p=p+1) //for each pixel
+              begin
+                  while(blanc) @(posedge pclk);  // wait for viewable data
 
-	case(mode)
-	   0:
-	     begin
-		cd = 2'h2;
-		pc = 1'b0;
-	     end
-	   1:
-	     begin
-		cd = 2'h0;
-		pc = 1'b0;
-	     end
-	   2:
-	     begin
-		cd = 2'h0;
-		pc = 1'b1;
-	     end
-	   3:
-	     begin
-		cd = 2'h1;
-		pc = 1'b0;
-	     end
-	endcase
+                  //$display("pixel=%0d, line=%0d, (%0t)",p,l,$time);
 
-	//repeat(50) @(posedge clk);
+                  // Depending on Mode, determine pixel data
+                  // pixel number = line * (thgate + 1) + p
+                  pn = l * (thgate + 1) + p;
 
-	// -------------------------------
-	// Turn VGA back On ...
-	m0.wb_wr1( `CTRL,  4'hf, {
-				16'h0,	// Reserved
-				bpol, cpol,
-				vpol, hpol,
-				pc,	// 1'b0,	// PC
-				cd,	// 2'h2,	// CD
-				vbl[1:0],	// VBL
-				1'b0,	// Reserved
-				1'b0,	// CBSWE
-				1'b0,	// VBSWE
-				1'b0,	// BSIE
-				1'b0,	// HIE
-				1'b0,	// VIE
-				1'b1	// Video Enable
-				});
+                  case(mode)
+                    0: begin //24bpp
+                           pra = pn[31:2] * 3; // Pixel relative Address
+                           paa = pra + 0;      // Pixel Absolute Address
 
-	$display("VBL: %0d, Mode: %0d", vbl, mode);
-	repeat(2) @(posedge vsync);
+                           // Pixel Data
+                           case(pn[1:0])
+                             0: begin
+                                    tmp = s0.mem[paa];
+                                    pd = tmp[31:8];
+                                end
+                             1: begin
+                                    tmp = s0.mem[paa];
+                                    pd[23:16] = tmp[7:0];
+                                    tmp = s0.mem[paa+1];
+                                    pd[15:0] = tmp[31:16];
+                                end
+                             2: begin
+                                    tmp = s0.mem[paa+1];
+                                    pd[23:8] = tmp[15:0];
+                                    tmp = s0.mem[paa+2];
+                                    pd[7:0] = tmp[31:24];
+                                end
+                             3: begin
+                                    tmp = s0.mem[paa+2];
+                                    pd = tmp[23:0];
+                                end
+                           endcase
+                       end
 
-	// For Each Line
-	for(l=0;l<tvgate;l=l+1)
-	// For each Pixel
-	for(p=0;p<thgate+1;p=p+1)
-	   begin
-		while(blanc)	@(posedge pclk);  // wait for viewable data
+                    1: begin // 8 bit/pixel grayscale mode
+                           pra = pn[31:2]; // Pixel relative Address
+                           paa = pra + 0;  // Pixel Absolute Address
 
-		//$display("pixel=%0d, line=%0d, (%0t)",p,l,$time);
+                           // Pixel Data
+                           case(pn[1:0])
+                             0: begin
+                                    tmp = s0.mem[paa];
+                                    pd = { tmp[31:24], tmp[31:24], tmp[31:24] };
+                                end
+                             1: begin
+                                    tmp = s0.mem[paa];
+                                    pd = { tmp[23:16], tmp[23:16], tmp[23:16] };
+                                end
+                             2: begin
+                                    tmp = s0.mem[paa];
+                                    pd = { tmp[15:8], tmp[15:8], tmp[15:8] };
+                                end
+                             3: begin
+                                    tmp = s0.mem[paa];
+                                    pd = { tmp[7:0], tmp[7:0], tmp[7:0] };
+                                end
+                           endcase
+                       end
 
-		// Depending on Mode, determine pixel data
-		// pixel number = line * (thgate + 1) + p
-		pn = l * (thgate + 1) + p;
+                    2: begin // 8 bit/pixel Pseudo Color mode
+                           pra = pn[31:2]; // Pixel relative Address
+                           paa = pra + 0;  // Pixel Absolute Address
 
-		case(mode)
-		   0:	// 24 bit/pixel mode
-		   begin
-			pra = pn[31:2] * 3;	// Pixel relative Address
-			paa = pra + 0;		// Pixel Absolute Address
+                           //Pixel Data
+                           case(pn[1:0])
+                             0: begin
+                                    tmp = s0.mem[paa];
+                                    tmp = s0.mem[cbar[31:2] + tmp[31:24]];
+                                    pd = tmp[23:0];
+                                end
+                             1: begin
+                                    tmp = s0.mem[paa];
+                                    tmp = s0.mem[cbar[31:2] + tmp[23:16]];
+                                    pd = tmp[23:0];
+                                end
+                             2: begin
+                                    tmp = s0.mem[paa];
+                                    tmp = s0.mem[cbar[31:2] + tmp[15:8]];
+                                    pd = tmp[23:0];
+                                end
+                             3: begin
+                                    tmp = s0.mem[paa];
+                                    tmp = s0.mem[cbar[31:2] + tmp[7:0]];
+                                    pd = tmp[23:0];
+                                end
+                           endcase
+                       end
 
-			// Pixel Data
-			case(pn[1:0])
-			   0:
-			     begin
-				tmp = s0.mem[paa];
-				pd = tmp[31:8];
-			     end
-			   1:
-			     begin
-				tmp = s0.mem[paa];
-				pd[23:16] = tmp[7:0];
-				tmp = s0.mem[paa+1];
-				pd[15:0] = tmp[31:16];
-			     end
-			   2:
-			     begin
-				tmp = s0.mem[paa+1];
-				pd[23:8] = tmp[15:0];
-				tmp = s0.mem[paa+2];
-				pd[7:0] = tmp[31:24];
-			     end
-			   3:
-			     begin
-				tmp = s0.mem[paa+2];
-				pd = tmp[23:0];
-			     end
-			endcase
-		   end
+                    3: begin // 16 bit/pixel mode
+                           pra = pn[31:1]; // Pixel relative Address
+                           paa = pra + 0;  // Pixel Absolute Address
 
-		   1:	// 8 bit/pixel grayscale mode
-		   begin
-			pra = pn[31:2];		// Pixel relative Address
-			paa = pra + 0;		// Pixel Absolute Address
-			case(pn[1:0])
-			   0:
-			     begin
-				tmp = s0.mem[paa];
-				pd = { tmp[31:24], tmp[31:24], tmp[31:24] };
-			     end
-			   1:
-			     begin
-				tmp = s0.mem[paa];
-				pd = { tmp[23:16], tmp[23:16], tmp[23:16] };
-			     end
-			   2:
-			     begin
-				tmp = s0.mem[paa];
-				pd = { tmp[15:8], tmp[15:8], tmp[15:8] };
-			     end
-			   3:
-			     begin
-				tmp = s0.mem[paa];
-				pd = { tmp[7:0], tmp[7:0], tmp[7:0] };
-			     end
-			endcase
-		   end
+                           //Pixel Data
+                           case(pn[0])
+                             0: begin
+                                    tmp = s0.mem[paa];
+                                    tmp[15:0] = tmp[31:16];
+                                    pd = {tmp[15:11], 3'h0, tmp[10:5], 2'h0, tmp[4:0], 3'h0};
+                                end
+                             1: begin
+                                    tmp = s0.mem[paa];
+                                    pd = {tmp[15:11], 3'h0, tmp[10:5], 2'h0, tmp[4:0], 3'h0};
+                                end
+                           endcase
+                       end
 
-		   2:	// 8 bit/pixel Pseudo Color mode
-		   begin
-			pra = pn[31:2];		// Pixel relative Address
-			paa = pra + 0;		// Pixel Absolute Address
-			case(pn[1:0])
-			   0:
-			     begin
-				tmp = s0.mem[paa];
-				tmp = s0.mem[cbar[31:2] + tmp[31:24]];
-				pd = tmp[23:0];
-			     end
-			   1:
-			     begin
-				tmp = s0.mem[paa];
-				tmp = s0.mem[cbar[31:2] + tmp[23:16]];
-				pd = tmp[23:0];
-			     end
-			   2:
-			     begin
-				tmp = s0.mem[paa];
-				tmp = s0.mem[cbar[31:2] + tmp[15:8]];
-				pd = tmp[23:0];
-			     end
-			   3:
-			     begin
-				tmp = s0.mem[paa];
-				tmp = s0.mem[cbar[31:2] + tmp[7:0]];
-				pd = tmp[23:0];
-			     end
-			endcase
-		   end
+                    4: begin // 32 bit/pixel mode
+                           pra = pn;       // Pixel relative Address
+                           paa = pra + 0;  // Pixel Absolute Address
 
-		   3:	// 16 bit/pixel mode
-		   begin
-			pra = pn[31:1];		// Pixel relative Address
-			paa = pra + 0;		// Pixel Absolute Address
-			case(pn[0])
-			   0:
-			     begin
-				tmp = s0.mem[paa];
-				tmp[15:0] = tmp[31:16];
-				pd = {tmp[15:11], 3'h0, tmp[10:5], 2'h0, tmp[4:0], 3'h0};
-			     end
-			   1:
-			     begin
-				tmp = s0.mem[paa];
-				pd = {tmp[15:11], 3'h0, tmp[10:5], 2'h0, tmp[4:0], 3'h0};
-			     end
-			endcase
-		   end
+                           //Pixel Data
+                           tmp = s0.mem[paa];
+                           pd = tmp[23:0];
+                       end
 
-		endcase
+                  endcase
 
-		if(pd !== {red, green, blue} )
-		   begin
-			$display("ERROR: Pixel Data Mismatch: Expected: %h, Got: %h %h %h",
-				pd, red, green, blue);
-			$display("       pixel=%0d, line=%0d, (%0t)",p,l,$time);
-			error_cnt = error_cnt + 1;
-			if(error_cnt > 10)	$stop;
-		   end
 
-		@(posedge pclk);
+                  //Check Results
+                  if(pd !== {red, green, blue} )
+                  begin
+                      $display("ERROR: Pixel Data Mismatch: Expected: %h, Got: %h %h %h",
+                                pd, red, green, blue);
+                      $display("       pixel=%0d, line=%0d, (%0t)",p,l,$time);
+                      error_cnt = error_cnt + 1;
+                      if(error_cnt > 10) $stop;
+                  end
 
-	   end
-   end end
+                  @(posedge pclk);
+              end //next p/l
+          end //next vbl/mode
+      end //next delay
 
-show_errors;
-$display("*****************************************************");
-$display("*** Test DONE ...                                 ***");
-$display("*****************************************************\n\n");
+      show_errors;
+      $display("-------------------------------------------------");
+      $display("- Test DONE ...                                 -");
+      $display("-------------------------------------------------\n\n");
 
-end
-endtask
+  end
+  endtask
 
 
 
@@ -1059,7 +1043,7 @@ $display("*** FIFO Underrun Test 1                          ***");
 $display("*****************************************************\n");
 
 	s0.delay=15;
-	int_warn = 0;
+	interrupt_warn = 0;
 
 	m0.wb_wr1( `VBARA, 4'hf, 0 );
 	m0.wb_wr1( `VBARB, 4'hf, 123456 );
@@ -1147,7 +1131,7 @@ repeat(10)	@(posedge clk);
 				1'b1	// Video Enable
 				});
 
-	while(!int)	@(posedge clk);
+	while(!interrupt) @(posedge clk);
 	m0.wb_rd1( `STAT,  4'hf, data);
 	if(data[1] !== 1'b1)
 	   begin
@@ -1161,7 +1145,7 @@ $display("*** Test DONE ...                                 ***");
 $display("*****************************************************\n\n");
 
 m0.wb_wr1( `CTRL,  4'hf, 32'h0000_0000);
-int_warn = 1;
+interrupt_warn = 1;
 s0.delay=1;
 repeat(10) @(posedge clk);
 
