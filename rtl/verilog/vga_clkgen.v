@@ -80,7 +80,7 @@
 
 
 module vga_clkgen #(
-  parameter HAS_DVI = 1
+  parameter HAS_DVI = 0
 )
 (
   // inputs & outputs
@@ -89,8 +89,8 @@ module vga_clkgen #(
 
   output reg pclk_o,       // pixel clock out
 
-  output reg dvi_pclk_p_o  // dvi cpclk+ output
-  output reg dvi_pclk_n_o  // dvi cpclk- output
+  output reg dvi_pclk_p_o, // dvi cpclk+ output
+  output reg dvi_pclk_n_o, // dvi cpclk- output
 
   output reg pclk_ena_o    // pixel clock enable output
 );
@@ -106,12 +106,12 @@ module vga_clkgen #(
     if (rst_i)
     begin
         dvi_pclk_p_o <= 1'b0;
-        dvi_pclk_m_o <= 1'b0;
+        dvi_pclk_n_o <= 1'b0;
     end
     else
     begin
         dvi_pclk_p_o <= ~dvi_pclk_p_o;
-        dvi_pclk_m_o <=  dvi_pclk_p_o;
+        dvi_pclk_n_o <=  dvi_pclk_p_o;
     end
 
 generate
@@ -135,7 +135,14 @@ generate
       // Simply reroute the pixel input clock input
 
       always @* pclk_o     = pclk_i;
-      always @* pclk_ena_o = 1'b1;
+
+      //In plain verilog 'always @*' doesn't trigger on timestamp t0, which
+      //causes a 'z' in simulations. Therefore we use
+      //'always @(posedge pclk_i)'. This creates a constant flipflop, which
+      //should get optimized away.
+      //In SystemVerilog 'always_comb' does get trigger on t0, and hence this
+      //works.
+      always @(posedge pclk_i) pclk_ena_o = 1'b1;
   end
 endgenerate
 
