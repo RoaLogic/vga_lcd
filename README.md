@@ -1,8 +1,4 @@
 # vga_lcd
-VGA LCD Core (OpenCores)
-
-From the original developer of the core: "Roa Logic is commited to maintaining the cores which the company's founder contributed to OpenCores many years ago. All cores will be released and maintained here on the Roa Logic github account."
-
 
 ## Description
 
@@ -42,3 +38,7 @@ See the on-line documentation (current revision 1.2) for more information.
 - VGA/LCD core v2.0 is ready and available in verilog from OpenCores CVS via cvsweb or via cvsget.
 - Low level abstraction layer available in C from CVS.
 
+## Background:
+The VGA/LCD Controller core is developed and maintained by Roa Logic’s founder, Richard Herveille and was originally released via OpenCores.
+
+Roa Logic is committed to maintaining the cores which the company's founder developed and contributed to OpenCores. All cores will be released and maintained here on the Roa Logic GitHub account.
