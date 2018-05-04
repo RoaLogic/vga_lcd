@@ -11,7 +11,7 @@
 /////////////////////////////////////////////////////////////////////
 //                                                                 //
 //             Copyright (C) 2003 Richard Herveille, OpenCores     //
-//             Copyright (C) 2018 ROA Logic BV                     //
+//             Copyright (C) 2018 Roa Logic BV                     //
 //             www.roalogic.com                                    //
 //                                                                 //
 //   This source file may be used and distributed without          //
@@ -53,7 +53,7 @@
 //  HAS_DVI           [0,1]  Implement DVI clocks?    1
 // ------------------------------------------------------------------
 // REUSE ISSUES 
-//   Reset Strategy      : syncronous, active high
+//   Reset Strategy      : synchronous, active high
 //   Clock Domains       : pclk_i
 //   Critical Timing     : 
 //   Test Features       : 
