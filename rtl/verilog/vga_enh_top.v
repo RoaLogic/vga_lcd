@@ -68,9 +68,6 @@
 //               Changed top-level name to vga_enh_top.v
 //
 
-//synopsys translate_off
-`include "timescale.v"
-//synopsys translate_on
 `include "vga_defines.v"
 
 module vga_enh_top (
@@ -388,7 +385,7 @@ module vga_enh_top (
 		.pclk_i             ( clk_p_i            ),
 	`ifdef VGA_12BIT_DVI
 		.dvi_pclk_p_o       ( dvi_pclk_p_o       ),
-		.dvi_pclk_m_o       ( dvi_pclk_m_o       ),
+		.dvi_pclk_n_o       ( dvi_pclk_m_o       ),
 		.dvi_hsync_o        ( dvi_hsync_o        ),
 		.dvi_vsync_o        ( dvi_vsync_o        ),
 		.dvi_de_o           ( dvi_de_o           ),
