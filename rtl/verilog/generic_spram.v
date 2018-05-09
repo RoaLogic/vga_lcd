@@ -70,7 +70,6 @@
 //
 //
 
-`include "timescale.v"
 
 //`define VENDOR_XILINX
 //`define VENDOR_ALTERA
