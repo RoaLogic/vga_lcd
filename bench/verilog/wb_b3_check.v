@@ -65,29 +65,25 @@ begin
   chk = 0;
   wb_b3_err = 0;
 
-  $display ("**********************************************");
-  $display ("**                                          **");
-  $display ("** WISBONE RevB.3 sanity check instantiated **");
-  $display ("** (C) 2003 Richard Herveille               **");
-  $display ("**                                          **");
-  $display ("**********************************************");
+  $display ("--------------------------------------------");
+  $display ("-                                          -");
+  $display ("- WISBONE RevB.3 sanity check instantiated -");
+  $display ("- (C) 2003,2018 Richard Herveille          -");
+  $display ("-                                          -");
+  $display ("--------------------------------------------");
 end
 
 
 always @(posedge clk_i)
   begin
-      pcti <= #1 cti_i;
-      pbte <= #1 bte_i;
-      pwe  <= #1 we_i;
+      pcti <= cti_i;
+      pbte <= bte_i;
+      pwe  <= we_i;
   end
 
 
 always @(posedge clk_i)
-  if (cyc_i) begin
-    chk <= #1 1'b1;
-  end else
-    chk <= #1 1'b0;
-
+  check <= cyc_i;
 
 
 //
