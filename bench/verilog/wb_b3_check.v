@@ -83,7 +83,7 @@ always @(posedge clk_i)
 
 
 always @(posedge clk_i)
-  check <= cyc_i;
+  chk <= cyc_i;
 
 
 //
