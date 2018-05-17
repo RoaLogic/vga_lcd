@@ -107,7 +107,7 @@ wire		bcheck;
 //initial hvalid=0;
 //initial vvalid=0;
 
-parameter	clk_time = 40;
+parameter clk_time = 40;
 
 assign hcheck = enable;
 assign vcheck = enable;
@@ -174,8 +174,6 @@ always @(vsync)
 	   end
       end
 
-`ifdef VGA_12BIT_DVI
-`else
 // Verify BLANC Timing
 //assign bv_start = tvsync   + tvgdel + 2;
 //assign bv_end   = bv_start + tvgate + 2;
@@ -213,7 +211,7 @@ always @(bdel2)
 	bval = #1 !(bval1 & (bdel2 > bh_start) & (bdel2 < bh_end));
 
 always @(bval or blanc)
-	#0.01
+	#1
 	if(enable)
 	if(( (blanc ^ bpol) != bval) & bcheck)
 		$display("BLANK ERROR: Expected: %0d Got: %0d (%0t)",
@@ -225,7 +223,5 @@ always @(csync or vsync or hsync)
 	if( (csync ^ cpol) != ( (vsync ^ vpol) | (hsync ^ hpol) ) )
 		$display("CSYNC ERROR: Expected: %0d Got: %0d (%0t)",
 		( (vsync ^ vpol) | (hsync ^ hpol) ), (csync ^ cpol), $time);
-`endif
-
 endmodule
 
