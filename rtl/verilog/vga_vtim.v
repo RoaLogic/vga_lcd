@@ -94,7 +94,7 @@ module vga_vtim (
   reg  [ 1:0] fsm_state;
 
   reg  [15:0] cnt,      cnt_len;
-  wire [15:0] cnt_nxt,  cnt_len_next;
+  wire [15:0] cnt_nxt,  cnt_len_nxt;
   wire        cnt_done, cnt_len_done;
 
 
