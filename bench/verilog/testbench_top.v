@@ -101,8 +101,7 @@ wire		wb_cyc_i;
 wire		wb_ack_o;
 wire		wb_rty_o;
 wire		wb_err_o;
-reg		pclk_i;
-wire		pclk;
+reg 		pclk;
 wire    	hsync;
 wire		vsync;
 wire		csync;
@@ -157,20 +156,20 @@ reg	[7:0]	bank;
 
 /////////////////////////////////////////////////////////////////////
 //
-// Defines
+// Constants
 //
+`define	CTRL   32'h0000_0000
+`define	STAT   32'h0000_0004
+`define	HTIM   32'h0000_0008
+`define	VTIM   32'h0000_000c
+`define	HVLEN  32'h0000_0010
+`define	VBARA  32'h0000_0014
+`define	VBARB  32'h0000_0018
 
-`define	CTRL		32'h0000_0000
-`define	STAT		32'h0000_0004
-`define	HTIM		32'h0000_0008
-`define	VTIM		32'h0000_000c
-`define	HVLEN		32'h0000_0010
-`define	VBARA		32'h0000_0014
-`define	VBARB		32'h0000_0018
-
-`define USE_VC		1
+`define USE_VC 1
 
 parameter PCLK_C = 30;
+
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -181,9 +180,9 @@ initial
    begin
 	$timeformat (-9, 1, " ns", 12);
 	$display("\n\n");
-	$display("******************************************************");
-	$display("* WISHBONE VGA/LCD Controller Simulation started ... *");
-	$display("******************************************************");
+	$display("------------------------------------------------------");
+	$display("- VGA/LCD Controller Simulation started ...          -");
+	$display("------------------------------------------------------");
 	$display("\n");
 `ifdef WAVES
   	$shm_open("waves");
@@ -193,7 +192,7 @@ initial
 	scen = 0;
 	error_cnt = 0;
    	clk = 0;
-	pclk_i = 0;
+	pclk = 0;
    	rst = 0;
 	interrupt_warn=1;
 
@@ -202,8 +201,8 @@ initial
    	repeat(20) @(posedge clk);
 
 	// HERE IS WHERE THE TEST CASES GO ...
-//	reg_test;
-//	tim_test;
+	reg_test;
+	tim_test;
 	pd1_test;
 	pd2_test;
 	ur_test;
@@ -216,31 +215,26 @@ initial
 //
 // Sync Monitor
 //
-
-`ifdef VGA_12BIT_DVI
 sync_check #(PCLK_C) ucheck(
-`else
-sync_check #(PCLK_C) ucheck(
-`endif
-		.pclk(		pclk		),
-		.rst(		rst		),
-		.enable(	scen		),
-		.hsync(		hsync		),
-		.vsync(		vsync		),
-		.csync(		csync		),
-		.blanc(		blanc		),
-		.hpol(		hpol		),
-		.vpol(		vpol		),
-		.cpol(		cpol		),
-		.bpol(		bpol		),
-		.thsync(	thsync		),
-		.thgdel(	thgdel		),
-		.thgate(	thgate		),
-		.thlen(		thlen		),
-		.tvsync(	tvsync		),
-		.tvgdel(	tvgdel		),
-		.tvgate(	tvgate		),
-		.tvlen(		tvlen		) );
+  .pclk   ( pclk   ),
+  .rst    ( rst    ),
+  .enable ( scen   ),
+  .hsync  ( hsync  ),
+  .vsync  ( vsync  ),
+  .csync  ( csync  ),
+  .blanc  ( blanc  ),
+  .hpol   ( hpol   ),
+  .vpol   ( vpol   ),
+  .cpol   ( cpol   ),
+  .bpol   ( bpol   ),
+  .thsync ( thsync ),
+  .thgdel ( thgdel ),
+  .thgate ( thgate ),
+  .thlen  ( thlen  ),
+  .tvsync ( tvsync ),
+  .tvgdel ( tvgdel ),
+  .tvgate ( tvgate ),
+  .tvlen  ( tvlen  ) );
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -253,15 +247,15 @@ sync_check #(PCLK_C) ucheck(
 //
 
 wb_b3_check u_wb_check (
-	.clk_i ( clk      ),
-	.cyc_i ( wb_cyc_o ),
-	.stb_i ( wb_stb_o ),
-	.cti_i ( wb_cti_o ),
-	.bte_i ( wb_bte_o ),
-	.we_i  ( wb_we_o  ),
-	.ack_i ( wb_ack_i ),
-	.err_i ( wb_err_i ),
-	.rty_i ( 1'b0     ) );
+  .clk_i ( clk      ),
+  .cyc_i ( wb_cyc_o ),
+  .stb_i ( wb_stb_o ),
+  .cti_i ( wb_cti_o ),
+  .bte_i ( wb_bte_o ),
+  .we_i  ( wb_we_o  ),
+  .ack_i ( wb_ack_i ),
+  .err_i ( wb_err_i ),
+  .rty_i ( 1'b0     ) );
 
 
 /////////////////////////////////////////////////////////////////////
@@ -295,7 +289,7 @@ always @(posedge interrupt)
    end
 
 always #2.4 clk = ~clk;
-always #(PCLK_C/2) pclk_i = ~pclk_i;
+always #(PCLK_C/2) pclk = ~pclk;
 
   ///////////////////////////////////////////////////////////////////
   //
@@ -339,17 +333,7 @@ always #(PCLK_C/2) pclk_i = ~pclk_i;
     .wbm_err_i    ( wb_err_i        ),
 
     //-- VGA signals
-    .clk_p_i      ( pclk_i          ),
-`ifdef VGA_12BIT_DVI
-    .dvi_pclk_p_o ( dvi_pclk_p_o    ),
-    .dvi_pclk_m_o ( dvi_pclk_m_o    ),
-    .dvi_hsync_o  ( dvi_hsync_o     ),
-    .dvi_vsync_o  ( dvi_vsync_o     ),
-    .dvi_de_o     ( dvi_de_o        ),
-    .dvi_d_o      ( dvi_d_o         ),
-`endif
-
-    .clk_p_o      ( pclk            ),
+    .clk_p_i      ( pclk            ),
     .hsync_pad_o  ( hsync           ),
     .vsync_pad_o  ( vsync           ),
     .csync_pad_o  ( csync           ),
