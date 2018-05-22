@@ -1377,7 +1377,7 @@ for(dvi_odf=0; dvi_odf<4;dvi_odf=dvi_odf +1)
 			if(error_cnt > 10) $stop;
 		   end
 
-		@(negedge pclk_i);
+		@(negedge pclk);
 
 		// falling edge data
 		if (pdb !== dvi_d_o)
@@ -1388,7 +1388,7 @@ for(dvi_odf=0; dvi_odf<4;dvi_odf=dvi_odf +1)
 			error_cnt = error_cnt + 1;
 			if(error_cnt > 10) $stop;
 		   end
-		@(posedge pclk_i);
+		@(posedge pclk);
 `else
 
 		// compare data
@@ -1401,8 +1401,7 @@ for(dvi_odf=0; dvi_odf<4;dvi_odf=dvi_odf +1)
 			if(error_cnt > 10) $stop;
 		   end
 
-		@(negedge pclk_i);
-		@(posedge pclk_i);
+		repeat (2) @(negedge pclk);
 `endif
 	   end
    end
