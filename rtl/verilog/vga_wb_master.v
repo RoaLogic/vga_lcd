@@ -90,9 +90,9 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 	cyc_o, stb_o, cti_o, bte_o, we_o, adr_o, sel_o, ack_i, err_i, dat_i, sint,
 	ctrl_ven, ctrl_cd, ctrl_vbl, ctrl_vbsw, busy,
 	VBAa, VBAb, Thgate, Tvgate,
-	stat_avmp, vmem_switch, ImDoneFifoQ,
+	stat_avmp, vmem_switch,
 	cursor_adr, cursor0_ba, cursor1_ba, cursor0_ld, cursor1_ld,
-	fb_data_fifo_rreq, fb_data_fifo_q, fb_data_fifo_empty);
+	fb_data_fifo_rreq, fb_data_fifo_q, fb_data_fifo_empty, fb_image_done_o);
 
 	// inputs & outputs
 
@@ -135,7 +135,6 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 
 	output stat_avmp;       // active video memory page
 	output vmem_switch;     // video memory bank-switch request: memory page switched (when enabled)
-	output ImDoneFifoQ;
 
 	output [ 8: 0] cursor_adr; // cursor address
 	input  [31:11] cursor0_ba;
@@ -146,6 +145,7 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 	input          fb_data_fifo_rreq;
 	output [31: 0] fb_data_fifo_q;
 	output         fb_data_fifo_empty;
+        output         fb_image_done_o;
 
 
 	//
@@ -186,7 +186,7 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 	reg  [ 2:0] burst_cnt;                       // video memory burst access counter
 	wire        burst_done;                      // completed burst access to video mem
 	reg         sel_VBA;                         // select video memory base address
-	reg  [31:2] vmemA;                           // video memory address
+	reg  [31:0] vmemA;                           // video memory address
 
 	// wishbone access controller, video memory access request has highest priority (try to keep fifo full)
 	always @(posedge clk_i)
@@ -211,31 +211,14 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 	// select active memory page
 	assign vmem_switch = ImDoneStrb;
 
-	always @(posedge clk_i)
-	  if (sclr)
-	    sel_VBA <= #1 1'b0;
-	  else if (ctrl_vbsw)
-	    sel_VBA <= #1 sel_VBA ^ vmem_switch;  // select next video memory bank when finished reading current bank (and bank switch enabled)
+
+  // select next video memory bank when finished reading current bank (and bank switch enabled)
+  always @(posedge clk_i)
+    if      (sclr     ) sel_VBA <= 1'b0;
+    else if (ctrl_vbsw) sel_VBA <= sel_VBA ^ vmem_switch;
+
 
 	assign stat_avmp = sel_VBA; // assign output
-
-	// selecting active clut page / cursor data
-	// delay image done same amount as video-memory data
-	vga_fifo #(4, 1) clut_sw_fifo (
-		.clk    ( clk_i             ),
-		.aclr   ( 1'b1              ),
-		.sclr   ( sclr              ),
-		.d      ( ImDone            ),
-		.wreq   ( vmem_ack          ),
-		.q      ( ImDoneFifoQ       ),
-		.rreq   ( fb_data_fifo_rreq ),
-		.nword  ( ),
-		.empty  ( ),
-		.full   ( ),
-		.aempty ( ),
-		.afull  ( )
-	);
-
 
 	//
 	// generate burst counter
@@ -342,13 +325,8 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 
 	// select video memory base address
 	always @(posedge clk_i)
-	  if (sclr | dImDoneStrb)
-	    if (!sel_VBA)
-	      vmemA <= #1 VBAa;
-	    else
-	      vmemA <= #1 VBAb;
-	  else if (vmem_ack)
-	    vmemA <= #1 vmemA +30'h1;
+	  if      (sclr || dImDoneStrb) vmemA <= !sel_VBA ? {VBAa, 2'b00} : {VBAb, 2'b00};
+	  else if (vmem_ack           ) vmemA <= vmemA + 4;
 
 
 	////////////////////////////////////
@@ -393,7 +371,7 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 	//////////////////////////////
 	// generate wishbone signals
 	//
-	assign adr_o = cur_acc ? {cursor_ba, cursor_adr, 2'b00} : {vmemA, 2'b00};
+	assign adr_o = cur_acc ? {cursor_ba, cursor_adr, 2'b00} : vmemA;
 	wire wb_cycle = vmem_acc & !(burst_done & vmem_ack & !vmem_req) & !ImDone ||
 	                cur_acc & !cur_done;
 
@@ -442,13 +420,13 @@ module vga_wb_master (clk_i, rst_i, nrst_i,
 	wire [4:0] fb_data_fifo_nword;
 //	wire       fb_data_fifo_full;
 
-	vga_fifo #(4, 32) data_fifo (
+	vga_fifo #(4, 33) data_fifo (
 		.clk    ( clk_i              ),
 		.aclr   ( 1'b1               ),
 		.sclr   ( sclr               ),
-		.d      ( dat_i              ),
+		.d      ( {ImDone,dat_i}              ),
 		.wreq   ( vmem_ack           ),
-		.q      ( fb_data_fifo_q     ),
+		.q      ( {fb_image_done_o,fb_data_fifo_q} ),
 		.rreq   ( fb_data_fifo_rreq  ),
 		.nword  ( fb_data_fifo_nword ),
 		.empty  ( fb_data_fifo_empty ),
