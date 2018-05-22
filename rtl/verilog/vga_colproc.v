@@ -68,13 +68,12 @@ module vga_colproc (
   input             clk_i,              // master clock
   input             rst_i,              // synchronous reset
 
-  input      [31:0] vdat_buffer_d_i,    // video memory data input
-
   input      [ 1:0] color_depth_i,      // color depth (8bpp, 16bpp, 24bpp)
   input             pseudo_color_i,     // pseudo color enabled (only for 8bpp color depth)
 
-  input             vdat_buffer_empty_i,
-  output reg        vdat_buffer_rreq_o, // pixel buffer read request
+  input      [31:0] frame_buffer_d_i,    // video memory data input
+  input             frame_buffer_empty_i,
+  output reg        frame_buffer_rreq_o, // pixel buffer read request
 
   input             rgb_fifo_full_i,
   output reg        rgb_fifo_wreq_o,
@@ -101,8 +100,8 @@ module vga_colproc (
   //---------------------------------------------
   // Variables
   //
-  reg [31:0] databuffer;
-  reg [ 7:0] Ra, Ga, Ba;
+  reg [31:0] fb_data;     //data from Frame Buffer
+  reg [ 7:0] Ra, Ga, Ba;  //temporary storage for 24bpp
   reg [ 1:0] cnt;
 
   reg [ 6:0] fsm_state;
@@ -111,9 +110,9 @@ module vga_colproc (
   // Module body
   //
 
-  // store word from pixelbuffer / wishbone input
+  // store word from frame buffer
   always @(posedge clk_i)
-    if (vdat_buffer_rreq_o) databuffer <= vdat_buffer_d_i;
+    if (frame_buffer_rreq_o) fb_data <= frame_buffer_d_i;
 
 
   //
@@ -123,27 +122,27 @@ module vga_colproc (
   always @(posedge clk_i)
     if (rst_i)
     begin
-        fsm_state          <= IDLE;
-        vdat_buffer_rreq_o <= 1'b0;
-        rgb_fifo_wreq_o    <= 1'b0;
-        clut_req_o         <= 1'b0;
-        cnt                <=  'h3;
+        fsm_state           <= IDLE;
+        frame_buffer_rreq_o <= 1'b0;
+        rgb_fifo_wreq_o     <= 1'b0;
+        clut_req_o          <= 1'b0;
+        cnt                 <=  'h3;
     end
     else
     begin
         //default values (strobe signals)
-        vdat_buffer_rreq_o <= 1'b0;
-        rgb_fifo_wreq_o    <= 1'b0;
-        clut_req_o         <= 1'b0;
+        frame_buffer_rreq_o <= 1'b0;
+        rgb_fifo_wreq_o     <= 1'b0;
+        clut_req_o          <= 1'b0;
 
         //FSM
         case (fsm_state)
           // idle state
           IDLE       : begin
-                           if (!rgb_fifo_full_i && !vdat_buffer_empty_i)
+                           if (!rgb_fifo_full_i && !frame_buffer_empty_i)
                            begin
-                               fsm_state          <= FILL_BUF;
-                               vdat_buffer_rreq_o <= 1'b1;
+                               fsm_state           <= FILL_BUF;
+                               frame_buffer_rreq_o <= 1'b1;
                            end
 
                            //when entering from 8bpp_pseudo_color_mode
@@ -185,27 +184,27 @@ module vga_colproc (
                            begin
                                if (~|cnt)
                                begin
-                                   fsm_state          <= !vdat_buffer_empty_i ? FILL_BUF : IDLE;
-                                   vdat_buffer_rreq_o <= ~vdat_buffer_empty_i;
+                                   fsm_state           <= !frame_buffer_empty_i ? FILL_BUF : IDLE;
+                                   frame_buffer_rreq_o <= ~frame_buffer_empty_i;
                                end
 
                                rgb_fifo_wreq_o <= 1'b1;
                                cnt <= cnt -1;
                            end
 
-                           r_o <= databuffer >> (cnt * 8);
-                           g_o <= databuffer >> (cnt * 8);
-                           b_o <= databuffer >> (cnt * 8);
+                           r_o <= fb_data >> (cnt * 8);
+                           g_o <= fb_data >> (cnt * 8);
+                           b_o <= fb_data >> (cnt * 8);
                        end
 
           // 8 bits per pixel pseudo-colour
           COL_8BPP   : begin
                            if (~|cnt)
                            begin
-                               if (!rgb_fifo_full_i && !vdat_buffer_empty_i)
+                               if (!rgb_fifo_full_i && !frame_buffer_empty_i)
                                begin
-                                   fsm_state          <= FILL_BUF;
-                                   vdat_buffer_rreq_o <= 1'b1;
+                                   fsm_state           <= FILL_BUF;
+                                   frame_buffer_rreq_o <= 1'b1;
                                end
                                else
                                    fsm_state <= IDLE;
@@ -233,17 +232,17 @@ module vga_colproc (
                            cnt <= cnt -1;
 
                            //RGB656
-                           r_o <= {databuffer[31:27], 3'h0};
-                           g_o <= {databuffer[26:21], 2'h0};
-                           b_o <= {databuffer[20:16], 3'h0};
+                           r_o <= {fb_data[31:27], 3'h0};
+                           g_o <= {fb_data[26:21], 2'h0};
+                           b_o <= {fb_data[20:16], 3'h0};
                         end
 
           COL_16BPP_B: if (!rgb_fifo_full_i)
                        begin
-                           if (!vdat_buffer_empty_i)
+                           if (!frame_buffer_empty_i)
                            begin
-                               fsm_state          <= FILL_BUF;
-                               vdat_buffer_rreq_o <= 1'b1;
+                               fsm_state           <= FILL_BUF;
+                               frame_buffer_rreq_o <= 1'b1;
                            end
                            else
                                fsm_state <= IDLE;
@@ -252,46 +251,46 @@ module vga_colproc (
                            cnt <= cnt -1;
 
                            //RGB656
-                           r_o <= {databuffer[15:11], 3'h0};
-                           g_o <= {databuffer[10: 5], 2'h0};
-                           b_o <= {databuffer[ 4: 0], 3'h0};
+                           r_o <= {fb_data[15:11], 3'h0};
+                           g_o <= {fb_data[10: 5], 2'h0};
+                           b_o <= {fb_data[ 4: 0], 3'h0};
                        end
 
           // 24 bits per pixel
           COL_24BPP  : if (!rgb_fifo_full_i)
                        begin
-                           if      (cnt == 2'h1      ) fsm_state <= COL_24BPP; // stay in current state
-                           else if (!vdat_buffer_empty_i) fsm_state <= FILL_BUF;
-                           else                           fsm_state <= IDLE;
+                           if      (cnt == 2'h1          ) fsm_state <= COL_24BPP; // stay in current state
+                           else if (!frame_buffer_empty_i) fsm_state <= FILL_BUF;
+                           else                            fsm_state <= IDLE;
 
-                           if (cnt != 2'h1 && !vdat_buffer_empty_i) vdat_buffer_rreq_o <= 1'b1;
+                           if (cnt != 2'h1 && !frame_buffer_empty_i) frame_buffer_rreq_o <= 1'b1;
 
                            rgb_fifo_wreq_o <= 1'b1;
                            cnt <= cnt -1;
 
                            case (cnt)
                              2'b11: begin
-                                       r_o <= databuffer[31:24];
-                                       g_o <= databuffer[23:16];
-                                       b_o <= databuffer[15: 8];
-                                       Ra  <= databuffer[ 7: 0];
+                                       r_o <= fb_data[31:24];
+                                       g_o <= fb_data[23:16];
+                                       b_o <= fb_data[15: 8];
+                                       Ra  <= fb_data[ 7: 0];
                                     end
 
                              2'b10: begin
                                         r_o <= Ra;
-                                        g_o <= databuffer[31:24];
-                                        b_o <= databuffer[23:16];
-                                        Ra  <= databuffer[15: 8];
-                                        Ga  <= databuffer[ 7: 0];
+                                        g_o <= fb_data[31:24];
+                                        b_o <= fb_data[23:16];
+                                        Ra  <= fb_data[15: 8];
+                                        Ga  <= fb_data[ 7: 0];
                                     end
 
                              2'b01: begin
                                         r_o <= Ra;
                                         g_o <= Ga;
-                                        b_o <= databuffer[31:24];
-                                        Ra  <= databuffer[23:16];
-                                        Ga  <= databuffer[15: 8];
-                                        Ba  <= databuffer[ 7: 0];
+                                        b_o <= fb_data[31:24];
+                                        Ra  <= fb_data[23:16];
+                                        Ga  <= fb_data[15: 8];
+                                        Ba  <= fb_data[ 7: 0];
                                     end
 
                              2'b00: begin
@@ -305,10 +304,10 @@ module vga_colproc (
           // 32 bits per pixel
           COL_32BPP  : if (!rgb_fifo_full_i)
                        begin
-                           if (!vdat_buffer_empty_i)
+                           if (!frame_buffer_empty_i)
                            begin
-                               fsm_state          <= FILL_BUF;
-                               vdat_buffer_rreq_o <= 1'b1;
+                               fsm_state           <= FILL_BUF;
+                               frame_buffer_rreq_o <= 1'b1;
                            end
                            else
                               fsm_state <= IDLE;
@@ -316,16 +315,16 @@ module vga_colproc (
                            rgb_fifo_wreq_o <= 1'b1;
                            cnt <= cnt -1;
 
-                           r_o <= databuffer[23:16];
-                           g_o <= databuffer[15: 8];
-                           b_o <= databuffer[ 7: 0];
+                           r_o <= fb_data[23:16];
+                           g_o <= fb_data[15: 8];
+                           b_o <= fb_data[ 7: 0];
                        end
         endcase
     end
 
 
   // assign clut offset
-  assign clut_offs_o = databuffer >> (cnt * 8);
+  assign clut_offs_o = fb_data >> (cnt * 8);
 
 endmodule
 
